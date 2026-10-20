@@ -11,8 +11,13 @@ target_include_directories(yogho PRIVATE src third_party/nuked-opl3)
 if(EMSCRIPTEN)
   set(CMAKE_EXECUTABLE_SUFFIX ".js")
   target_compile_options(yogho PRIVATE -O2 -sUSE_SDL=2)
-  target_link_options(yogho PRIVATE -O2 -sUSE_SDL=2 -sALLOW_MEMORY_GROWTH=1
-    -sEXPORTED_RUNTIME_METHODS=FS -sFORCE_FILESYSTEM=1)
+  # ASYNCIFY lets the ported main-thread code keep the original's blocking loops
+  # (plat_yield -> emscripten_sleep).
+  target_link_options(yogho PRIVATE -O2 -sUSE_SDL=2 -sALLOW_MEMORY_GROWTH=1 -sASYNCIFY
+    -sASYNCIFY_STACK_SIZE=65536 -sEXPORTED_RUNTIME_METHODS=FS -sFORCE_FILESYSTEM=1)
+  if(YOGHO_PRELOAD_DATA)
+    target_link_options(yogho PRIVATE "--preload-file=${YOGHO_PRELOAD_DATA}@/YOGHODAT.DAT")
+  endif()
 else()
   # Desktop: SDL2 VC dev package (C:\Tools\SDL2\SDL2-2.32.10)
   set(SDL2_DIR "C:/Tools/SDL2/SDL2-2.32.10/cmake" CACHE PATH "")
