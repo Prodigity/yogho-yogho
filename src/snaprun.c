@@ -70,6 +70,10 @@ int snapplay(int argc, char **argv) {
     }
     script_add((uint64_t)frame, "quit", "");
     script_fast = 1;
+    /* the host mouse must not leak into the replay: hold it where the snapshot has it
+     * (driver x = plat x / 2, see menu.c mouse_poll) */
+    script_mouse_override = 1;
+    script_mx = dgw(0x2c86) * 2; script_my = dgw(0x2c88); script_mb = 0;
     ovl_register_all();
     farcall_set_overlay(level);
     plat_set_isr(timer_isr);
