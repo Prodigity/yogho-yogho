@@ -4,27 +4,84 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Yogho Yogho</title>
+<meta name="description" content="Yogho Yogho (DOS, 1995) on a rewritten engine, playable in the browser.">
 <style>
-  :root { --bg: #111; --fg: #ddd; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 14px system-ui, sans-serif; }
-  #wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100%; padding: 16px; box-sizing: border-box; }
-  canvas { width: min(100%, 960px); aspect-ratio: 4 / 3; image-rendering: pixelated; background: #000; }
-  #status { margin-top: 8px; opacity: .7; }
+  :root { --bg: #15121c; --panel: #221d2c; --fg: #ece6f4; --muted: #a59bb5; --accent: #ffcf3f; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--fg);
+               font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1000px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 22px; margin: 4px 0 12px; letter-spacing: .5px; }
+  h1 span { color: var(--accent); }
+  #stage { position: relative; width: 100%; aspect-ratio: 4 / 3; background: #000; border-radius: 6px; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; outline: none; }
+  #start { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+           flex-direction: column; gap: 10px; background: rgba(0,0,0,.72); cursor: pointer; border: 0;
+           color: var(--fg); font: inherit; width: 100%; }
+  #start b { font-size: 20px; color: var(--accent); }
+  #start[hidden] { display: none; }
+  #status { margin: 8px 0 0; color: var(--muted); min-height: 1.5em; }
+  .info { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 12px; }
+  .card { background: var(--panel); border-radius: 6px; padding: 12px 14px; }
+  .card h2 { font-size: 15px; margin: 0 0 6px; color: var(--accent); }
+  kbd { background: #332b40; border-radius: 3px; padding: 0 5px; font: 13px ui-monospace, monospace; }
+  ul { margin: 0; padding-left: 18px; }
+  small, .muted { color: var(--muted); }
+  a { color: var(--accent); }
 </style>
 </head>
 <body>
-<div id="wrap">
-  <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
-  <div id="status">Laden…</div>
-</div>
+<main>
+  <h1>Yogho Yogho <span>spel</span></h1>
+  <div id="stage">
+    <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+    <button id="start" type="button" hidden><b>Klik om te spelen</b><span>Click to play (sound starts after the click)</span></button>
+  </div>
+  <p id="status">Laden…</p>
+  <div class="info">
+    <div class="card">
+      <h2>Besturing / Controls</h2>
+      <ul>
+        <li><kbd>←</kbd> <kbd>→</kbd> lopen · <kbd>↑</kbd> <kbd>↓</kbd> klimmen / bukken</li>
+        <li><kbd>spatie</kbd> springen</li>
+        <li>Menu: <kbd>S</kbd> of muis = START, <kbd>I</kbd> introductie</li>
+        <li><kbd>P</kbd> pauze · <kbd>G</kbd> muziek aan/uit · <kbd>Esc</kbd> stoppen</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Over deze versie</h2>
+      <p style="margin:0">The DOS game Yogho Yogho (1995, Euphoria), running on an engine rewritten from scratch in C
+      and compiled to WebAssembly — reverse-engineered from the original and checked frame by frame against it.
+      Unofficial fan preservation project, not affiliated with the original makers or brand owners.
+      <a href="https://github.com/Prodigity/yogho-yogho">Source</a>.</p>
+    </div>
+  </div>
+</main>
 <script>
+  var canvas = document.getElementById('canvas');
+  var startBtn = document.getElementById('start');
+  var statusEl = document.getElementById('status');
   var Module = {
-    canvas: document.getElementById('canvas'),
-    setStatus: function (s) { document.getElementById('status').textContent = s || ''; },
+    canvas: canvas,
+    noInitialRun: true,
+    setStatus: function (s) { statusEl.textContent = s ? s.replace(/Downloading data\.\.\./, 'Laden…') : ''; },
     print: function (t) { console.log(t); },
-    printErr: function (t) { console.warn(t); }
+    printErr: function (t) { console.warn(t); },
+    onRuntimeInitialized: function () {
+      statusEl.textContent = '';
+      startBtn.hidden = false;
+    }
   };
-  document.getElementById('canvas').addEventListener('click', function () { this.focus(); });
+  startBtn.addEventListener('click', function () {
+    startBtn.hidden = true;
+    canvas.focus();
+    Module.callMain([]);
+  });
+  canvas.addEventListener('click', function () { canvas.focus(); });
+  /* keep arrow keys / space from scrolling the page while playing */
+  window.addEventListener('keydown', function (e) {
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].indexOf(e.key) >= 0) e.preventDefault();
+  }, { passive: false });
 </script>
 <script src="yogho.js"></script>
 </body>
