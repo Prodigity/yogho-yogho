@@ -49,3 +49,26 @@ int selftest_opltrace(int argc, char **argv) {
     }
     return 0;
 }
+
+/* yogho --opldump <out> <ticks> : boot driver like the game (SFX bank DAT 70 at 326b:10bc,
+ * title tune DAT 69 at 77a4:0000 — the segments the original uses), run <ticks> driver ticks and
+ * write the driver segment (runtime 2792, 0x13a0 bytes) for comparison with a DOSBox dump. */
+int selftest_opldump(int argc, char **argv) {
+    (void)argc;
+    const char *out = argv[0];
+    int ticks = atoi(argv[1]);
+    size_t n;
+    const uint8_t *s = dat_entry(70, &n); memcpy(P(0x326b, 0x10bc), s, n);
+    s = dat_entry(71, &n); memcpy(P(0x326b, 0x1940), s, n);
+    AdlibDetect();
+    SfxLoad(0x326b, 0x10bc);
+    s = dat_entry(69, &n); memcpy(P(0x77a4, 0), s, n);
+    MusicPlay(0x77a4, 0, 0);
+    dgw_set(0x2ca6, 0);
+    for (int t = 0; t < ticks; t++) isr_music_hook();
+    FILE *f = fopen(out, "wb");
+    if (!f) return 1;
+    fwrite(P(SEG_ADLIB, 0), 1, 0x13a0, f);
+    fclose(f);
+    return 0;
+}
