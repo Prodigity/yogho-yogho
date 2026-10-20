@@ -66,7 +66,13 @@ static void flash_step(void) {                              /* 1000:0873..08b8 *
     }
 }
 
+/* The retrace waits (IN AL,3DAh loops at 065e / 0713) are not needed for timing in the port, but
+ * reading 3DAh resets the attribute controller's index/data flip-flop, which the following AC
+ * writes (and the main thread's display_on/off) depend on — so the read is kept. */
+static void retrace_wait(void) { (void)io_in(0x3da); }
+
 static void plain_tick_tail(void) {                         /* 065e..068d */
+    retrace_wait();
     palette_tick();
     isr_music_hook();
     if (W(0x2c98)) SW(0x2c98, W(0x2c98) - 1);
@@ -108,6 +114,7 @@ void timer_isr(void) {                                      /* 1000:05f0 */
     crtc_write_start(W(0x2cd6), (uint8_t)((W(0x2cb4) >> 2) & 3));
     io_out(0x3c0, 0x33);
     io_out(0x3c0, (uint8_t)((W(0x2cb4) & 3) * 2));
+    retrace_wait();                                         /* 0713 */
     int8_t div = (int8_t)(DB(0x2c91) - 1);
     DB(0x2c91) = (uint8_t)div;
     if (div < 0) {                                          /* palette running light */

@@ -1,6 +1,7 @@
 /* Program entry: command line, data files, platform, then the original's main (160a:0009).
  *   yogho [--data YOGHODAT.DAT] [--exe YOGHO.EXE]
  *   yogho --opltrace <dat-entry> <ticks> [...]      AdLib register trace (selftest.c)
+ *   yogho --script <file> [--fast]                deterministic input/dump script (testscript.c)
  *   yogho --render-selftest|--player-selftest|--objects-selftest
  * YOGHOHI.DAT is read/written next to the data file (the original keeps it next to YOGHO.EXE). */
 #include "platform.h"
@@ -10,6 +11,7 @@
 #include "dat.h"
 #include "mem.h"
 #include "selftest.h"
+#include "testscript.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -24,6 +26,8 @@ int main(int argc, char **argv) {
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--data") && i + 1 < argc) datpath = argv[++i];
         else if (!strcmp(argv[i], "--exe") && i + 1 < argc) exepath = argv[++i];
+        else if (!strcmp(argv[i], "--script") && i + 1 < argc) { if (script_load(argv[++i])) { fprintf(stderr, "cannot read script\n"); return 1; } }
+        else if (!strcmp(argv[i], "--fast")) script_fast = 1;
         else if (!strcmp(argv[i], "--opltrace") && i + 2 < argc) {
             if (dat_open(datpath) || mem_load_exe(exepath)) { fprintf(stderr, "data files missing\n"); return 1; }
             return selftest_opltrace(argc - i - 1, argv + i + 1);

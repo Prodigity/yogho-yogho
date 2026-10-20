@@ -1,5 +1,6 @@
 #include "platform.h"
 #include "vga.h"
+#include "testscript.h"
 #include <SDL.h>
 #include <string.h>
 #ifdef __EMSCRIPTEN__
@@ -58,7 +59,10 @@ void plat_quit(void) { quit_flag = 1; }
 int plat_should_quit(void) { return quit_flag; }
 
 static int mx, my, mb;
-void plat_mouse(int *x, int *y, int *b) { *x = mx; *y = my; *b = mb; }
+void plat_mouse(int *x, int *y, int *b) {
+    if (script_mouse_override) { *x = script_mx; *y = script_my; *b = script_mb; return; }
+    *x = mx; *y = my; *b = mb;
+}
 
 /* SDL scancode -> PC set-1 scancode (+ extended flag). Only keys the game reads matter. */
 static int pc_scancode(SDL_Scancode s, int *ext) {
@@ -122,15 +126,17 @@ void plat_yield(void) {
     pump();
     double due = (now_s() - t0) * VGA_HZ;
     uint64_t target = (uint64_t)due;
+    if (script_fast) target = ticks_done + 1;
     if (target > ticks_done + 8) ticks_done = target - 8;   /* after a stall don't spin forever */
     int ran = 0;
     while (ticks_done < target) {
+        if (script_tick(ticks_done, keyh)) quit_flag = 1;
         if (isr) isr();
         if (tick_hook) tick_hook();
         ticks_done++;
         ran = 1;
     }
-    if (ran) present();
+    if (ran && (!script_fast || (ticks_done & 15) == 0)) present();
 #ifdef __EMSCRIPTEN__
     emscripten_sleep(ran ? 0 : 2);
 #else
