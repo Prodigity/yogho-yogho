@@ -15,8 +15,9 @@ if(EMSCRIPTEN)
   # (plat_yield -> emscripten_sleep).
   target_link_options(yogho PRIVATE -O2 -sUSE_SDL=2 -sALLOW_MEMORY_GROWTH=1 -sASYNCIFY
     -sASYNCIFY_STACK_SIZE=65536 -sEXPORTED_RUNTIME_METHODS=FS -sFORCE_FILESYSTEM=1)
-  if(YOGHO_PRELOAD_DATA)
-    target_link_options(yogho PRIVATE "--preload-file=${YOGHO_PRELOAD_DATA}@/YOGHODAT.DAT")
+  if(YOGHO_PRELOAD_DIR)
+    # local testing only: bundle the user's game folder (YOGHO.EXE, YOGHODAT.DAT, YOGHOHI.DAT)
+    target_link_options(yogho PRIVATE "--preload-file=${YOGHO_PRELOAD_DIR}@/")
   endif()
 else()
   # Desktop: SDL2 VC dev package (C:\Tools\SDL2\SDL2-2.32.10)

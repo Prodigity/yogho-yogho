@@ -28,6 +28,11 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--exe") && i + 1 < argc) exepath = argv[++i];
         else if (!strcmp(argv[i], "--script") && i + 1 < argc) { if (script_load(argv[++i])) { fprintf(stderr, "cannot read script\n"); return 1; } }
         else if (!strcmp(argv[i], "--fast")) script_fast = 1;
+        else if (!strcmp(argv[i], "--snaprun") && i + 5 < argc) {
+            extern int snaprun(int argc, char **argv);
+            if (dat_open(datpath) || mem_load_exe(exepath)) { fprintf(stderr, "data files missing\n"); return 1; }
+            return snaprun(argc - i - 1, argv + i + 1);
+        }
         else if (!strcmp(argv[i], "--opltrace") && i + 2 < argc) {
             if (dat_open(datpath) || mem_load_exe(exepath)) { fprintf(stderr, "data files missing\n"); return 1; }
             return selftest_opltrace(argc - i - 1, argv + i + 1);
