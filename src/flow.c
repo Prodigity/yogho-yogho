@@ -392,9 +392,17 @@ void level_run(void) {
     DB(0x2c91) = 0;
     wait_ticks(0x32);
     SW(0x2c9c, W(0x2c9c) & 0xff7f);                         /* play */
+    level_run_loop(0);
+}
 
+/* 160a:0f56..0f9c: the per-tick level loop and the exit.  resume != 0 enters it the way a DOSBox
+ * snapshot taken during play leaves the original's main thread: inside the loop's wait_tick()
+ * (developer tool, see snaprun.c). */
+void level_run_loop(int resume) {
+    if (resume) { spin_while_nonzero_w(0x2c98); goto body; }
     while (W(0xc2) == 0) {                                  /* 160a:0f56 test first */
         wait_tick();
+    body:
         if (W(0x2d7c) == 0) MusicPlay(W(0x2d7a), W(0x2d78), 0);   /* jingle over / music back on */
         if (DB(0x12d) == 1 && (W(0x2c9c) & 0x40) && W(0xec) == 0x43f) b1_transition();
         if (DB(0x12d) == 0x0a && W(0x5143) == 1) { ending(); return; }   /* returns without the exit fade */
@@ -441,6 +449,37 @@ void level_run(void) {
     MusicStop();
 }
 
+/* 160a:03d7..0464: menu -> new game -> levels.  resume != 0 enters in the middle of level_run's
+ * per-tick loop of the level already in memory (snapshot tests, snaprun.c). */
+void game_loop(int resume) {
+    for (;;) {
+        if (!resume) {
+            SW(0x2c9c, 0x8000);                             /* 160a:03d7 (every pass) */
+            if (menu() == -1) break;
+            new_game();
+        }
+        while (dgs(0xbe) > 0) {
+            if (!resume) level_load();
+            while (dgs(0xbe) > 0 && W(0xc2) == 0) {
+                if (resume) { level_run_loop(1); resume = 0; }
+                else level_run();
+                switch (W(0xc2)) {
+                case 1: SW(0xbe, W(0xbe) - 1); SW(0xc2, 0); break;          /* died: same level */
+                case 2:
+                    if (DB(0x12d) == 0x0b) SW(0xbe, 0);                       /* after B6: game over */
+                    else if (W(0x5124) == 0) DB(0x12d)++;                     /* next level */
+                    break;
+                case 4: SW(0xbe, 0); break;                                   /* Esc */
+                default: break;
+                }
+                for (uint8_t k = 0; k < 0x3e; k++) DB(0x2ce8 + k) = 0;
+                if (plat_should_quit()) return;
+            }
+        }
+        if (plat_should_quit()) return;
+    }
+}
+
 /* ---- 160a:0009 ---- */
 int game_main(int argc, char **argv) {
     exe_path = argc > 0 && argv[0] ? argv[0] : "";
@@ -478,32 +517,9 @@ int game_main(int argc, char **argv) {
         SW(0x13fa, 0);
         SfxLoad(W(0x2d72), W(0x2d70));                      /* 1000:47df */
         SW(0xcc, 0); SW(0xca, 0);
-        int first = 1;
-        for (;;) {
-            SW(0x2c9c, 0x8000);                             /* 160a:03d7 */
-            if (first) {
-                SW(0x126, 2);   /* IRQs that hit during the original's startup (DOSBox: 2) */
-                first = 0;
-            }
-            if (menu() == -1) break;
-            new_game();
-            while (dgs(0xbe) > 0) {
-                level_load();
-                while (dgs(0xbe) > 0 && W(0xc2) == 0) {
-                    level_run();
-                    switch (W(0xc2)) {
-                    case 1: SW(0xbe, W(0xbe) - 1); SW(0xc2, 0); break;          /* died: same level */
-                    case 2:
-                        if (DB(0x12d) == 0x0b) SW(0xbe, 0);                       /* after B6: game over */
-                        else if (W(0x5124) == 0) DB(0x12d)++;                     /* next level */
-                        break;
-                    case 4: SW(0xbe, 0); break;                                   /* Esc */
-                    default: break;
-                    }
-                    for (uint8_t k = 0; k < 0x3e; k++) DB(0x2ce8 + k) = 0;
-                }
-            }
-        }
+        SW(0x2c9c, 0x8000);                                 /* 160a:03d7 */
+        SW(0x126, 2);   /* IRQs that hit during the original's startup (DOSBox: 2) */
+        game_loop(0);
         MusicStop();
         kbd_remove();
     }

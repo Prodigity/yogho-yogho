@@ -28,6 +28,12 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--exe") && i + 1 < argc) exepath = argv[++i];
         else if (!strcmp(argv[i], "--script") && i + 1 < argc) { if (script_load(argv[++i])) { fprintf(stderr, "cannot read script\n"); return 1; } }
         else if (!strcmp(argv[i], "--fast")) script_fast = 1;
+        else if (!strcmp(argv[i], "--snapplay") && i + 5 < argc) {
+            extern int snapplay(int argc, char **argv);
+            if (dat_open(datpath) || mem_load_exe(exepath)) { fprintf(stderr, "data files missing\n"); return 1; }
+            if (plat_init("Yogho Yogho (snapplay)") != 0) return 1;
+            return snapplay(argc - i - 1, argv + i + 1);
+        }
         else if (!strcmp(argv[i], "--snaprun") && i + 5 < argc) {
             extern int snaprun(int argc, char **argv);
             if (dat_open(datpath) || mem_load_exe(exepath)) { fprintf(stderr, "data files missing\n"); return 1; }

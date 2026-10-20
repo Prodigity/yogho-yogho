@@ -38,4 +38,9 @@ void intro(void);                           /* 160a:2ea6 */
 uint16_t intro_scene(uint16_t dat, uint16_t wait_in, uint16_t wait_out,
                      uint16_t fade_in_step, uint16_t fade_out_step, uint16_t delay);   /* 160a:2f4f */
 
+/* level_run split at its per-tick loop, and the menu/level loop, both resumable from a DOSBox
+ * snapshot taken during play (snaprun.c). */
+void level_run_loop(int resume);            /* 160a:0f56..0f9c */
+void game_loop(int resume);                 /* 160a:03d7..0464 */
+
 #endif

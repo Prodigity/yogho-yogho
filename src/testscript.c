@@ -37,6 +37,14 @@ int script_load(const char *path) {
     return 0;
 }
 
+void script_add(uint64_t tick, const char *cmd, const char *arg) {
+    ev = realloc(ev, sizeof(Ev) * (size_t)(nev + 1));
+    ev[nev].tick = tick;
+    snprintf(ev[nev].cmd, sizeof ev[nev].cmd, "%s", cmd);
+    snprintf(ev[nev].arg, sizeof ev[nev].arg, "%s", arg);
+    nev++;
+}
+
 static void write_file(const char *p, const void *d, size_t n) {
     FILE *f = fopen(p, "wb"); if (!f) return; fwrite(d, 1, n, f); fclose(f);
 }
@@ -49,6 +57,14 @@ int script_tick(uint64_t tick, key_fn keyh) {
             unsigned sc, down; sscanf(e->arg, "%x %u", &sc, &down);
             int ext = sc >= 0x47 && sc <= 0x53 && sc != 0x4a && sc != 0x4e;   /* grey cursor block */
             keyh((uint8_t)sc, (int)down, ext);
+        } else if (!strcmp(e->cmd, "poke")) {           /* poke <dg-off> <hexbytes>  (= DOSBox SM) */
+            unsigned off; char hex[200] = "";
+            if (sscanf(e->arg, "%x %199s", &off, hex) == 2)
+                for (unsigned k = 0; hex[2 * k] && hex[2 * k + 1]; k++) {
+                    unsigned b; sscanf(hex + 2 * k, "%2x", &b); DB(off + k) = (uint8_t)b;
+                }
+        } else if (!strcmp(e->cmd, "bits")) {           /* DGROUP:3510 directly (= DOSBox SM) */
+            DB(0x3510) = (uint8_t)strtoul(e->arg, 0, 16);
         } else if (!strcmp(e->cmd, "mouse")) {
             sscanf(e->arg, "%d %d %d", &script_mx, &script_my, &script_mb); script_mouse_override = 1;
         } else if (!strcmp(e->cmd, "dumpdg")) write_file(e->arg, P(SEG_DG, 0), 0x10000);
