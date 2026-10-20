@@ -12,7 +12,7 @@ static SDL_Window *win;
 static SDL_Renderer *ren;
 static SDL_Texture *tex;
 static uint32_t frame[320 * 200];
-static isr_fn isr;
+static isr_fn isr, tick_hook;
 static key_fn keyh;
 static audio_fn audio_cb;
 static SDL_AudioDeviceID audio_dev;
@@ -48,6 +48,7 @@ int plat_init(const char *title) {
 }
 
 void plat_set_isr(isr_fn f) { isr = f; }
+void plat_set_tick_hook(isr_fn f) { tick_hook = f; }
 void plat_set_key_handler(key_fn f) { keyh = f; }
 void plat_set_audio(audio_fn f) { audio_cb = f; }
 int plat_audio_rate(void) { return audio_rate; }
@@ -125,6 +126,7 @@ void plat_yield(void) {
     int ran = 0;
     while (ticks_done < target) {
         if (isr) isr();
+        if (tick_hook) tick_hook();
         ticks_done++;
         ran = 1;
     }

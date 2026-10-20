@@ -15,6 +15,7 @@ typedef void (*isr_fn)(void);
 
 int  plat_init(const char *title);
 void plat_set_isr(isr_fn f);       /* called once per emulated retrace while yielding */
+void plat_set_tick_hook(isr_fn f); /* called after the ISR on every retrace (audio generation) */
 void plat_yield(void);             /* run due ISR ticks, present, process input */
 void plat_quit(void);
 int  plat_should_quit(void);

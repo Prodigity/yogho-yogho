@@ -4,7 +4,7 @@ project(yogho C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-file(GLOB YOGHO_SRC ${CMAKE_SOURCE_DIR}/src/*.c)
+file(GLOB YOGHO_SRC CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/*.c)
 add_executable(yogho ${YOGHO_SRC} third_party/nuked-opl3/opl3.c)
 target_include_directories(yogho PRIVATE src third_party/nuked-opl3)
 
