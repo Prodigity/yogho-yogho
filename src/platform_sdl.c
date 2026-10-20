@@ -110,7 +110,7 @@ static void pump(void) {
 }
 
 static void present(void) {
-    vga_scanout(frame, 320, 200);
+    vga_scanout(frame);
     SDL_UpdateTexture(tex, NULL, frame, 320 * 4);
     SDL_RenderClear(ren);
     SDL_RenderCopy(ren, tex, NULL, NULL);

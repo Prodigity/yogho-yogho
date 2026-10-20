@@ -23,15 +23,11 @@ int main(int argc, char **argv) {
     if (mem_load_exe(exepath) != 0) { fprintf(stderr, "cannot open %s\n", exepath); return 1; }
     if (plat_init("Yogho Yogho") != 0) return 1;
     vga_reset();
-    vga.line_offset = 80;
     size_t n;
     const uint8_t *pal = dat_entry(10, &n);
     vga_dac_write(0, pal, 256);
     const uint8_t *img = dat_entry(show, &n);
-    for (size_t i = 0; i < n && i < 64000; i++) {
-        int x = (int)(i % 320), y = (int)(i / 320);
-        vga.plane[x & 3][y * 80 + (x >> 2)] = img[i];
-    }
+    for (size_t i = 0; i < n && i < 64000; i++) wb(0xA000, (uint16_t)i, img[i]);
     while (!plat_should_quit()) plat_yield();
     return 0;
 }
